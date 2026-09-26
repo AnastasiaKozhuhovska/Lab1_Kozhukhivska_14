@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="StudentApp.MainPage">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="16">
+
+            <Label Text="Особистий кабінет студента"
+                   FontSize="22"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center" />
+
+            <Entry Text="{Binding FullName, Mode=TwoWay}"
+                   Placeholder="ПІБ студента" />
+
+            <Entry Text="{Binding Group, Mode=TwoWay}"
+                   Placeholder="Група" />
+
+            <Label Text="{Binding AverageScore, StringFormat='Середній бал: {0:F1}'}" />
+
+            <Slider Minimum="0"
+                    Maximum="5"
+                    Value="{Binding AverageScore, Mode=TwoWay}" />
+
+            <Label Text="{Binding GreetingText, Mode=OneWay}"
+                   TextColor="{Binding AverageScoreColor, Mode=OneWay}"
+                   FontSize="18"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center" />
+
+            <!-- Кнопка блокується автоматично, коли ПІБ порожнє (CanAddStudent) -->
+            <Button Text="Додати студента"
+                    Command="{Binding AddStudentCommand}" />
+
+            <Label Text="Додані студенти:"
+                   FontAttributes="Bold"
+                   Margin="0,10,0,0" />
+
+            <CollectionView ItemsSource="{Binding Students}"
+                             HeightRequest="200">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Padding="10" Margin="0,4,0,0">
+                            <HorizontalStackLayout Spacing="8">
+                                <Label Text="{Binding FullName}"
+                                       FontAttributes="Bold" />
+                                <Label Text="{Binding Group, StringFormat='група {0}'}" />
+                                <Label Text="{Binding AverageScore, StringFormat='бал: {0:F1}'}" />
+                            </HorizontalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>
