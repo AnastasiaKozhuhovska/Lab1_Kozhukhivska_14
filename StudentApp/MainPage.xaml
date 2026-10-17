@@ -6,10 +6,17 @@
     <ScrollView>
         <VerticalStackLayout Padding="24" Spacing="16">
 
-            <Label Text="Особистий кабінет студента"
-                   FontSize="22"
-                   FontAttributes="Bold"
-                   HorizontalOptions="Center" />
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0"
+                       Text="Особистий кабінет студента"
+                       FontSize="22"
+                       FontAttributes="Bold"
+                       HorizontalOptions="Center" />
+
+                <Button Grid.Column="1"
+                        Text="⚙️"
+                        Command="{Binding OpenSettingsCommand}" />
+            </Grid>
 
             <Entry Text="{Binding FullName, Mode=TwoWay}"
                    Placeholder="ПІБ студента" />
@@ -37,17 +44,29 @@
                    FontAttributes="Bold"
                    Margin="0,10,0,0" />
 
-            <CollectionView ItemsSource="{Binding Students}"
-                             HeightRequest="200">
+            <CollectionView x:Name="StudentsCollectionView"
+                             ItemsSource="{Binding Students}"
+                             HeightRequest="220">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
                         <Border Padding="10" Margin="0,4,0,0">
-                            <HorizontalStackLayout Spacing="8">
-                                <Label Text="{Binding FullName}"
-                                       FontAttributes="Bold" />
-                                <Label Text="{Binding Group, StringFormat='група {0}'}" />
-                                <Label Text="{Binding AverageScore, StringFormat='бал: {0:F1}'}" />
-                            </HorizontalStackLayout>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <HorizontalStackLayout Grid.Column="0" Spacing="8">
+                                    <Label Text="{Binding FullName}"
+                                           FontAttributes="Bold" />
+                                    <Label Text="{Binding Group, StringFormat='група {0}'}" />
+                                    <Label Text="{Binding AverageScore, StringFormat='бал: {0:F1}'}" />
+                                </HorizontalStackLayout>
+
+                                <!-- OpenDetailsCommand живе у StudentViewModel (BindingContext сторінки),
+                                     а не в поточному елементі Student, тому дістаємо його через
+                                     BindingContext самого CollectionView. CommandParameter="{Binding .}"
+                                     передає саме поточного студента з циклу. -->
+                                <Button Grid.Column="1"
+                                        Text="Детальніше"
+                                        Command="{Binding Source={x:Reference StudentsCollectionView}, Path=BindingContext.OpenDetailsCommand}"
+                                        CommandParameter="{Binding .}" />
+                            </Grid>
                         </Border>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>

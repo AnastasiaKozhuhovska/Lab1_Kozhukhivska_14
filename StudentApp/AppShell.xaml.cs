@@ -1,10 +1,13 @@
-﻿namespace StudentApp
+﻿using StudentApp.Views;
+
+namespace StudentApp;
+
+public partial class AppShell : Shell
 {
-    public partial class AppShell : Shell
+    public AppShell()
     {
-        public AppShell()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
+        Routing.RegisterRoute("studentdetail", typeof(StudentDetailPage));
+        Routing.RegisterRoute("settings", typeof(SettingsPage));
     }
 }

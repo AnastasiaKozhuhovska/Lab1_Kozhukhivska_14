@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="StudentApp.Views.SettingsPage"
+             Title="Налаштування">
+
+    <VerticalStackLayout Padding="24" Spacing="16">
+
+        <Label Text="Тема оформлення"
+               FontSize="22"
+               FontAttributes="Bold" />
+
+        <Label Text="{Binding CurrentTheme, StringFormat='Поточна тема: {0}'}" />
+
+        <Button Text="☀️ Світла тема"
+                Command="{Binding SetThemeCommand}"
+                CommandParameter="Light" />
+
+        <Button Text="🌙 Темна тема"
+                Command="{Binding SetThemeCommand}"
+                CommandParameter="Dark" />
+
+    </VerticalStackLayout>
+
+</ContentPage>

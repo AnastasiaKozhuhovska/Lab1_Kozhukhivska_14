@@ -1,6 +1,8 @@
-﻿using System.Collections.ObjectModel;
+﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
@@ -8,7 +10,7 @@ using StudentApp.Models;
 
 namespace StudentApp.ViewModels
 {
-    public class StudentViewModel : INotifyPropertyChanged
+    public class StudentViewModel : IQueryAttributable, INotifyPropertyChanged
     {
         private readonly Student _student = new();
 
@@ -23,8 +25,6 @@ namespace StudentApp.ViewModels
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(GreetingText));
 
-                    // ПІБ впливає на CanAddStudent — примушуємо кнопку
-                    // перевірити свій стан IsEnabled заново
                     ((Command)AddStudentCommand).ChangeCanExecute();
                 }
             }
@@ -63,15 +63,40 @@ namespace StudentApp.ViewModels
         public Color AverageScoreColor =>
             AverageScore >= 4.0 ? Colors.SeaGreen : Colors.OrangeRed;
 
-        // Колекція доданих студентів — CollectionView у XAML прив'язується саме до неї
         public ObservableCollection<Student> Students { get; } = new();
 
-        // Команда додавання поточного студента до списку
         public ICommand AddStudentCommand { get; }
+
+        public ICommand OpenDetailsCommand { get; }
+
+        public ICommand LoadStudentsCommand { get; }
+
+        public ICommand OpenSettingsCommand { get; }
 
         public StudentViewModel()
         {
             AddStudentCommand = new Command(AddStudent, CanAddStudent);
+            OpenDetailsCommand = new Command<Student>(async (student) => await OpenDetailsAsync(student));
+            LoadStudentsCommand = new Command(LoadStudents);
+            OpenSettingsCommand = new Command(async () => await Shell.Current.GoToAsync("settings"));
+        }
+
+        private void LoadStudents()
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"[StudentViewModel] LoadStudentsCommand виконано. У списку {Students.Count} студент(и/ів).");
+        }
+
+        private async Task OpenDetailsAsync(Student? student)
+        {
+            if (student is null) return;
+
+            var parameters = new Dictionary<string, object>
+            {
+                { "SelectedStudent", student }
+            };
+
+            await Shell.Current.GoToAsync("studentdetail", parameters);
         }
 
         private void AddStudent()
@@ -83,14 +108,26 @@ namespace StudentApp.ViewModels
                 AverageScore = AverageScore
             });
 
-            // Очищаємо поля вводу після додавання
+
             FullName = string.Empty;
             Group = string.Empty;
             AverageScore = 0;
         }
 
-        // Кнопка активна, лише якщо ПІБ не порожнє
         private bool CanAddStudent() => !string.IsNullOrWhiteSpace(FullName);
+
+
+        public void ApplyQueryAttributes(IDictionary<string, object> query)
+        {
+            if (query.TryGetValue("UpdatedStudent", out var value) && value is Student updatedStudent)
+            {
+                var index = Students.IndexOf(updatedStudent);
+                if (index >= 0)
+                {
+                    Students[index] = updatedStudent;
+                }
+            }
+        }
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
