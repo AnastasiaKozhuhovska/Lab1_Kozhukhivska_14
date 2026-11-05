@@ -18,11 +18,25 @@
                         Command="{Binding OpenSettingsCommand}" />
             </Grid>
 
+            <!-- Стан мережі та черги офлайн-змін (SyncQueue) -->
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <Label Grid.Column="0"
+                       Text="{Binding SyncStatusText}"
+                       TextColor="{Binding SyncStatusColor}"
+                       VerticalOptions="Center" />
+                <Button Grid.Column="1"
+                        Text="Синхронізувати"
+                        Command="{Binding SyncNowCommand}" />
+            </Grid>
+
             <Entry Text="{Binding FullName, Mode=TwoWay}"
                    Placeholder="ПІБ студента" />
 
             <Entry Text="{Binding Group, Mode=TwoWay}"
                    Placeholder="Група" />
+
+            <Entry Text="{Binding StudentCardNumber, Mode=TwoWay}"
+                   Placeholder="Номер студентського квитка (шифрується)" />
 
             <Label Text="{Binding AverageScore, StringFormat='Середній бал: {0:F1}'}" />
 
@@ -40,6 +54,9 @@
             <Button Text="Додати студента"
                     Command="{Binding AddStudentCommand}" />
 
+            <ActivityIndicator IsRunning="{Binding IsBusy}"
+                               IsVisible="{Binding IsBusy}" />
+
             <Label Text="Додані студенти:"
                    FontAttributes="Bold"
                    Margin="0,10,0,0" />
@@ -56,16 +73,21 @@
                                            FontAttributes="Bold" />
                                     <Label Text="{Binding Group, StringFormat='група {0}'}" />
                                     <Label Text="{Binding AverageScore, StringFormat='бал: {0:F1}'}" />
+                                    <Label Text="{Binding MaskedCardNumber}" />
                                 </HorizontalStackLayout>
 
-                                <!-- OpenDetailsCommand живе у StudentViewModel (BindingContext сторінки),
-                                     а не в поточному елементі Student, тому дістаємо його через
-                                     BindingContext самого CollectionView. CommandParameter="{Binding .}"
-                                     передає саме поточного студента з циклу. -->
-                                <Button Grid.Column="1"
-                                        Text="Детальніше"
-                                        Command="{Binding Source={x:Reference StudentsCollectionView}, Path=BindingContext.OpenDetailsCommand}"
-                                        CommandParameter="{Binding .}" />
+                                <!-- Команди живуть у StudentViewModel (BindingContext сторінки), тому беремо їх
+                                     через BindingContext самого CollectionView; CommandParameter="{Binding .}"
+                                     передає поточного студента. -->
+                                <HorizontalStackLayout Grid.Column="1" Spacing="6">
+                                    <Button Text="Редагувати"
+                                            Command="{Binding Source={x:Reference StudentsCollectionView}, Path=BindingContext.EditStudentCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    <Button Text="Видалити"
+                                            BackgroundColor="OrangeRed"
+                                            Command="{Binding Source={x:Reference StudentsCollectionView}, Path=BindingContext.DeleteStudentCommand}"
+                                            CommandParameter="{Binding .}" />
+                                </HorizontalStackLayout>
                             </Grid>
                         </Border>
                     </DataTemplate>

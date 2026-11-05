@@ -17,6 +17,16 @@ namespace StudentApp.WinUI
         public App()
         {
             this.InitializeComponent();
+
+            // WinUI перехоплює винятки UI-потоку раніше за AppDomain.UnhandledException,
+            // тому підписуємось і тут, щоб критична помилка точно потрапила в лог.
+            this.UnhandledException += OnWinUIUnhandledException;
+        }
+
+        private void OnWinUIUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+        {
+            StudentApp.Logging.GlobalExceptionHandler.LogFatal(
+                e.Exception, "WinUI.Application.UnhandledException", isTerminating: !e.Handled);
         }
 
         protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();

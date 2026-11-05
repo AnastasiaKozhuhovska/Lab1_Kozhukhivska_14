@@ -4,24 +4,37 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Microsoft.Extensions.Logging;
+using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
+using StudentApp.Data;
 using StudentApp.Models;
+using StudentApp.Services.Sync;
 
 namespace StudentApp.ViewModels
 {
-    public class StudentViewModel : IQueryAttributable, INotifyPropertyChanged
+    public class StudentViewModel : INotifyPropertyChanged
     {
-        private readonly Student _student = new();
+        private readonly IStudentRepository _repository;
+        private readonly ISyncService _syncService;
+        private readonly ILogger<StudentViewModel> _logger;
+
+        // Поля форми додавання нового студента.
+        private string _fullName = string.Empty;
+        private string _group = string.Empty;
+        private double _averageScore;
+        private string _studentCardNumber = string.Empty;
+        private bool _isBusy;
 
         public string FullName
         {
-            get => _student.FullName;
+            get => _fullName;
             set
             {
-                if (_student.FullName != value)
+                if (_fullName != value)
                 {
-                    _student.FullName = value;
+                    _fullName = value;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(GreetingText));
 
@@ -32,12 +45,12 @@ namespace StudentApp.ViewModels
 
         public string Group
         {
-            get => _student.Group;
+            get => _group;
             set
             {
-                if (_student.Group != value)
+                if (_group != value)
                 {
-                    _student.Group = value;
+                    _group = value;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(GreetingText));
                 }
@@ -46,14 +59,43 @@ namespace StudentApp.ViewModels
 
         public double AverageScore
         {
-            get => _student.AverageScore;
+            get => _averageScore;
             set
             {
-                if (Math.Abs(_student.AverageScore - value) > 0.0001)
+                if (Math.Abs(_averageScore - value) > 0.0001)
                 {
-                    _student.AverageScore = value;
+                    _averageScore = value;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(AverageScoreColor));
+                }
+            }
+        }
+
+        /// <summary>Номер студентського квитка (чутливе поле, у БД зберігається зашифрованим).</summary>
+        public string StudentCardNumber
+        {
+            get => _studentCardNumber;
+            set
+            {
+                if (_studentCardNumber != value)
+                {
+                    _studentCardNumber = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        /// <summary>Чи виконується зараз операція з БД (для індикатора завантаження).</summary>
+        public bool IsBusy
+        {
+            get => _isBusy;
+            private set
+            {
+                if (_isBusy != value)
+                {
+                    _isBusy = value;
+                    OnPropertyChanged();
+                    ((Command)AddStudentCommand).ChangeCanExecute();
                 }
             }
         }
@@ -65,29 +107,128 @@ namespace StudentApp.ViewModels
 
         public ObservableCollection<Student> Students { get; } = new();
 
+        // ---- Стан мережі та черги офлайн-змін ----
+
+        public bool IsOnline => _syncService.IsOnline;
+
+        public int PendingSyncCount => _syncService.PendingCount;
+
+        public string SyncStatusText => IsOnline
+            ? (PendingSyncCount == 0
+                ? "🟢 Онлайн · усі зміни синхронізовано"
+                : $"🟢 Онлайн · синхронізація… (у черзі: {PendingSyncCount})")
+            : $"🔴 Офлайн · у черзі змін: {PendingSyncCount}";
+
+        public Color SyncStatusColor => IsOnline ? Colors.SeaGreen : Colors.OrangeRed;
+
+        /// <summary>Ручний запуск відправлення черги на сервер.</summary>
+        public ICommand SyncNowCommand { get; }
+
+        /// <summary>Завантажує список студентів із БД.</summary>
+        public ICommand LoadCommand { get; }
+
+        /// <summary>Додає студента з форми в БД.</summary>
         public ICommand AddStudentCommand { get; }
 
-        public ICommand OpenDetailsCommand { get; }
+        /// <summary>Відкриває сторінку редагування вибраного студента.</summary>
+        public ICommand EditStudentCommand { get; }
 
-        public ICommand LoadStudentsCommand { get; }
+        /// <summary>Видаляє вибраного студента з БД.</summary>
+        public ICommand DeleteStudentCommand { get; }
 
         public ICommand OpenSettingsCommand { get; }
 
-        public StudentViewModel()
+        public StudentViewModel(IStudentRepository repository, ISyncService syncService,
+                                ILogger<StudentViewModel> logger)
         {
-            AddStudentCommand = new Command(AddStudent, CanAddStudent);
-            OpenDetailsCommand = new Command<Student>(async (student) => await OpenDetailsAsync(student));
-            LoadStudentsCommand = new Command(LoadStudents);
+            _repository = repository;
+            _logger = logger;
+            _syncService = syncService;
+            _syncService.StatusChanged += OnSyncStatusChanged;
+
+            SyncNowCommand = new Command(async () => await _syncService.ProcessQueueAsync());
+
+            LoadCommand = new Command(async () => await LoadAsync());
+            AddStudentCommand = new Command(async () => await AddStudentAsync(), CanAddStudent);
+            EditStudentCommand = new Command<Student>(async (student) => await EditStudentAsync(student));
+            DeleteStudentCommand = new Command<Student>(async (student) => await DeleteStudentAsync(student));
             OpenSettingsCommand = new Command(async () => await Shell.Current.GoToAsync("settings"));
         }
 
-        private void LoadStudents()
+        private async Task LoadAsync()
         {
-            System.Diagnostics.Debug.WriteLine(
-                $"[StudentViewModel] LoadStudentsCommand виконано. У списку {Students.Count} студент(и/ів).");
+            if (IsBusy) return;
+
+            try
+            {
+                IsBusy = true;
+                _logger.LogInformation("Завантаження списку студентів...");
+
+                var students = await _repository.GetAllAsync();
+
+                Students.Clear();
+                foreach (var student in students)
+                {
+                    Students.Add(student);
+                }
+
+                _logger.LogInformation("Список студентів завантажено: {Count} запис(ів)", Students.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Не вдалося завантажити список студентів");
+            }
+            finally
+            {
+                IsBusy = false;
+            }
         }
 
-        private async Task OpenDetailsAsync(Student? student)
+        private async Task AddStudentAsync()
+        {
+            var student = new Student
+            {
+                FullName = FullName.Trim(),
+                Group = Group.Trim(),
+                AverageScore = AverageScore,
+                StudentCardNumber = StudentCardNumber.Trim()
+            };
+
+            try
+            {
+                IsBusy = true;
+
+                var rows = await _repository.SaveAsync(student); // після вставки student.Id заповнено
+
+                if (rows == 0)
+                {
+                    _logger.LogWarning("Студента {FullName} не додано: БД не змінила жодного рядка", student.FullName);
+                    return;
+                }
+
+                Students.Add(student);
+
+                _logger.LogInformation("Студента {StudentId} ({FullName}, група {Group}) успішно додано",
+                    student.Id, student.FullName, student.Group);
+
+                FullName = string.Empty;
+                Group = string.Empty;
+                AverageScore = 0;
+                StudentCardNumber = string.Empty;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Помилка додавання студента {FullName}", student.FullName);
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
+        private bool CanAddStudent() => !IsBusy && !string.IsNullOrWhiteSpace(FullName);
+
+        private async Task EditStudentAsync(Student? student)
         {
             if (student is null) return;
 
@@ -96,38 +237,46 @@ namespace StudentApp.ViewModels
                 { "SelectedStudent", student }
             };
 
+            // Збереження змін виконує StudentDetailViewModel через репозиторій,
+            // а після повернення список перечитується з БД (MainPage.OnAppearing → LoadCommand).
             await Shell.Current.GoToAsync("studentdetail", parameters);
         }
 
-        private void AddStudent()
+        private async Task DeleteStudentAsync(Student? student)
         {
-            Students.Add(new Student
+            if (student is null) return;
+
+            try
             {
-                FullName = FullName,
-                Group = Group,
-                AverageScore = AverageScore
-            });
+                IsBusy = true;
 
+                var rows = await _repository.DeleteAsync(student);
+                Students.Remove(student);
 
-            FullName = string.Empty;
-            Group = string.Empty;
-            AverageScore = 0;
-        }
-
-        private bool CanAddStudent() => !string.IsNullOrWhiteSpace(FullName);
-
-
-        public void ApplyQueryAttributes(IDictionary<string, object> query)
-        {
-            if (query.TryGetValue("UpdatedStudent", out var value) && value is Student updatedStudent)
+                if (rows == 0)
+                    _logger.LogWarning("Студента {StudentId} не знайдено в БД під час видалення", student.Id);
+                else
+                    _logger.LogInformation("Студента {StudentId} успішно видалено", student.Id);
+            }
+            catch (Exception ex)
             {
-                var index = Students.IndexOf(updatedStudent);
-                if (index >= 0)
-                {
-                    Students[index] = updatedStudent;
-                }
+                _logger.LogError(ex, "Помилка видалення студента {StudentId}", student.Id);
+            }
+            finally
+            {
+                IsBusy = false;
             }
         }
+
+        // Подія приходить із фонового потоку, тому оновлюємо UI через MainThread.
+        private void OnSyncStatusChanged(object? sender, EventArgs e) =>
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                OnPropertyChanged(nameof(IsOnline));
+                OnPropertyChanged(nameof(PendingSyncCount));
+                OnPropertyChanged(nameof(SyncStatusText));
+                OnPropertyChanged(nameof(SyncStatusColor));
+            });
 
         public event PropertyChangedEventHandler? PropertyChanged;
 

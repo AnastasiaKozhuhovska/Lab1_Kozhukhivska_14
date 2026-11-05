@@ -4,22 +4,63 @@
              x:Class="StudentApp.Views.SettingsPage"
              Title="Налаштування">
 
-    <VerticalStackLayout Padding="24" Spacing="16">
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="16">
 
-        <Label Text="Тема оформлення"
-               FontSize="22"
-               FontAttributes="Bold" />
+            <Label Text="Тема оформлення"
+                   FontSize="22"
+                   FontAttributes="Bold" />
 
-        <Label Text="{Binding CurrentTheme, StringFormat='Поточна тема: {0}'}" />
+            <Label Text="{Binding CurrentTheme, StringFormat='Поточна тема: {0}'}" />
 
-        <Button Text="☀️ Світла тема"
-                Command="{Binding SetThemeCommand}"
-                CommandParameter="Light" />
+            <Button Text="☀️ Світла тема"
+                    Command="{Binding SetThemeCommand}"
+                    CommandParameter="Light" />
 
-        <Button Text="🌙 Темна тема"
-                Command="{Binding SetThemeCommand}"
-                CommandParameter="Dark" />
+            <Button Text="🌙 Темна тема"
+                    Command="{Binding SetThemeCommand}"
+                    CommandParameter="Dark" />
 
-    </VerticalStackLayout>
+            <!-- ===== Діагностика: моделювання необроблених винятків ===== -->
+
+            <Label Text="Діагностика (моделювання збоїв)"
+                   FontSize="22"
+                   FontAttributes="Bold"
+                   Margin="0,20,0,0" />
+
+            <Label Text="{Binding LogDirectory, StringFormat='Папка логів: {0}'}"
+                   FontSize="12" />
+
+            <Label Text="{Binding SentryStatus}"
+                   FontAttributes="Bold" />
+
+            <Button Text="📨 Надіслати тестову помилку в Sentry"
+                    Command="{Binding SendTestErrorToSentryCommand}" />
+
+            <Button Text="⚠️ Збій у фоновій задачі (Task)"
+                    Command="{Binding SimulateBackgroundTaskExceptionCommand}" />
+
+            <Button Text="💥 Критичний збій (застосунок закриється)"
+                    BackgroundColor="OrangeRed"
+                    Command="{Binding SimulateFatalExceptionCommand}" />
+
+            <Button Text="🗂️ Журнал подій (перегляд і фільтр логів)"
+                    Command="{Binding OpenLogViewerCommand}" />
+
+            <Button Text="📄 Показати останні записи лог-файлу"
+                    Command="{Binding ShowLogTailCommand}" />
+
+            <Label Text="{Binding DiagnosticsStatus}"
+                   FontAttributes="Bold" />
+
+            <Border Padding="10">
+                <Label Text="{Binding LogTail}"
+                       FontFamily="Consolas"
+                       FontSize="11"
+                       LineBreakMode="WordWrap" />
+            </Border>
+
+        </VerticalStackLayout>
+    </ScrollView>
 
 </ContentPage>

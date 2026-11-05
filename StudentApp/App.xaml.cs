@@ -1,6 +1,7 @@
 ﻿using Microsoft.Maui.Storage;
 using StudentApp.Models;
 using StudentApp.Services;
+using StudentApp.Services.Sync;
 using StudentApp.ViewModels;
 
 namespace StudentApp;
@@ -9,11 +10,16 @@ public partial class App : Application
 {
 
     private readonly IAppStateService _appStateService;
+    private readonly ISyncService _syncService;
 
-    public App(IAppStateService appStateService)
+    public App(IAppStateService appStateService, ISyncService syncService)
     {
         InitializeComponent();
         _appStateService = appStateService;
+        _syncService = syncService;
+
+        // Стежимо за мережею та відправляємо зміни, що лишилися в черзі.
+        _syncService.Start();
 
 
         var savedTheme = Preferences.Default.Get(
@@ -42,6 +48,9 @@ public partial class App : Application
         window.Resumed += async (s, e) =>
         {
             System.Diagnostics.Debug.WriteLine("[App] Window Resumed — застосунок повернувся на передній план.");
+
+            // Повернулися на передній план — пробуємо відправити чергу офлайн-змін.
+            _ = _syncService.ProcessQueueAsync();
 
             _appStateService.RestoreState();
             var savedRoute = _appStateService.CurrentRoute;

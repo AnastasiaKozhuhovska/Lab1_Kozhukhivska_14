@@ -1,0 +1,85 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="StudentApp.MainPage">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="16">
+
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0"
+                       Text="Особистий кабінет студента"
+                       FontSize="22"
+                       FontAttributes="Bold"
+                       HorizontalOptions="Center" />
+
+                <Button Grid.Column="1"
+                        Text="⚙️"
+                        Command="{Binding OpenSettingsCommand}" />
+            </Grid>
+
+            <Entry Text="{Binding FullName, Mode=TwoWay}"
+                   Placeholder="ПІБ студента" />
+
+            <Entry Text="{Binding Group, Mode=TwoWay}"
+                   Placeholder="Група" />
+
+            <Label Text="{Binding AverageScore, StringFormat='Середній бал: {0:F1}'}" />
+
+            <Slider Minimum="0"
+                    Maximum="5"
+                    Value="{Binding AverageScore, Mode=TwoWay}" />
+
+            <Label Text="{Binding GreetingText, Mode=OneWay}"
+                   TextColor="{Binding AverageScoreColor, Mode=OneWay}"
+                   FontSize="18"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center" />
+
+            <!-- Кнопка блокується автоматично, коли ПІБ порожнє (CanAddStudent) -->
+            <Button Text="Додати студента"
+                    Command="{Binding AddStudentCommand}" />
+
+            <ActivityIndicator IsRunning="{Binding IsBusy}"
+                               IsVisible="{Binding IsBusy}" />
+
+            <Label Text="Додані студенти:"
+                   FontAttributes="Bold"
+                   Margin="0,10,0,0" />
+
+            <CollectionView x:Name="StudentsCollectionView"
+                             ItemsSource="{Binding Students}"
+                             HeightRequest="220">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Padding="10" Margin="0,4,0,0">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <HorizontalStackLayout Grid.Column="0" Spacing="8">
+                                    <Label Text="{Binding FullName}"
+                                           FontAttributes="Bold" />
+                                    <Label Text="{Binding Group, StringFormat='група {0}'}" />
+                                    <Label Text="{Binding AverageScore, StringFormat='бал: {0:F1}'}" />
+                                </HorizontalStackLayout>
+
+                                <!-- Команди живуть у StudentViewModel (BindingContext сторінки), тому беремо їх
+                                     через BindingContext самого CollectionView; CommandParameter="{Binding .}"
+                                     передає поточного студента. -->
+                                <HorizontalStackLayout Grid.Column="1" Spacing="6">
+                                    <Button Text="Редагувати"
+                                            Command="{Binding Source={x:Reference StudentsCollectionView}, Path=BindingContext.EditStudentCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    <Button Text="Видалити"
+                                            BackgroundColor="OrangeRed"
+                                            Command="{Binding Source={x:Reference StudentsCollectionView}, Path=BindingContext.DeleteStudentCommand}"
+                                            CommandParameter="{Binding .}" />
+                                </HorizontalStackLayout>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

@@ -4,20 +4,22 @@ namespace StudentApp;
 
 public partial class MainPage : ContentPage
 {
-    public MainPage()
+    // ViewModel (разом із репозиторієм) підставляє DI-контейнер.
+    public MainPage(StudentViewModel viewModel)
     {
         InitializeComponent();
-        BindingContext = new StudentViewModel();
+        BindingContext = viewModel;
     }
 
     protected override void OnAppearing()
     {
         base.OnAppearing();
 
+        // Щоразу, коли сторінка з'являється (зокрема після редагування), перечитуємо список із БД.
         if (BindingContext is StudentViewModel viewModel &&
-            viewModel.LoadStudentsCommand.CanExecute(null))
+            viewModel.LoadCommand.CanExecute(null))
         {
-            viewModel.LoadStudentsCommand.Execute(null);
+            viewModel.LoadCommand.Execute(null);
         }
 
         System.Diagnostics.Debug.WriteLine("[MainPage] OnAppearing — сторінка списку студентів з'явилась.");

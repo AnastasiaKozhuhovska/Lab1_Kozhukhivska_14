@@ -2,23 +2,27 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="StudentApp.Views.StudentDetailPage"
-             Title="Деталі студента">
+             Title="Редагування студента">
 
     <VerticalStackLayout Padding="24" Spacing="16">
 
-        <Label Text="Деталі студента"
+        <Label Text="Редагування студента"
                FontSize="22"
                FontAttributes="Bold" />
 
-        <Label Text="{Binding FullName, StringFormat='ПІБ: {0}'}"
-               FontSize="18" />
+        <Label Text="ПІБ:" />
+        <Entry Text="{Binding FullName, Mode=TwoWay}"
+               Placeholder="ПІБ студента" />
 
-        <Label Text="{Binding Group, StringFormat='Група: {0}'}"
-               FontSize="18" />
+        <Label Text="Група:" />
+        <Entry Text="{Binding Group, Mode=TwoWay}"
+               Placeholder="Група" />
 
-        <Label Text="Редагувати середній бал:"
-               Margin="0,10,0,0" />
+        <Label Text="Номер студентського квитка:" />
+        <Entry Text="{Binding StudentCardNumber, Mode=TwoWay}"
+               Placeholder="Номер студентського квитка" />
 
+        <Label Text="Середній бал:" />
         <Entry Text="{Binding AverageScore, Mode=TwoWay}"
                Keyboard="Numeric" />
 
